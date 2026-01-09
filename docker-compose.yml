@@ -1,0 +1,157 @@
+services:
+  # ============================================================================
+  # MongoDB Database - STARTS FIRST
+  # ============================================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: watchvine_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    environment:
+      - MONGO_INITDB_DATABASE=watchvine_refined
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - watchvine_network
+
+  # ============================================================================
+  # Main Flask App - STARTS AFTER MONGODB
+  # Checks DB on startup:
+  #   - If < 10 products: Runs scraper → indexer → starts APIs
+  #   - If >= 10 products: Starts APIs directly
+  # ============================================================================
+  main_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.main
+    container_name: watchvine_main_app
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./temp_images:/app/temp_images
+      - ./logs:/app/logs
+      - shared_index:/app  # Shared volume for index files
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - DATABASE_NAME=watchvine_refined
+      - COLLECTION_NAME=products
+      - MONGODB_DB=whatsapp_bot
+      - TEXT_SEARCH_API_URL=http://text_search_api:8001
+      - IMAGE_IDENTIFIER_API_URL=http://image_identifier_api:8002
+      - Google_api=${Google_api}
+      - google_model=${google_model}
+      - Google_url=${Google_url}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
+      - INSTANCE_NAME=${INSTANCE_NAME}
+      - GOOGLE_APPS_SCRIPT_URL=${GOOGLE_APPS_SCRIPT_URL}
+      - GOOGLE_APPS_SCRIPT_SECRET=${GOOGLE_APPS_SCRIPT_SECRET}
+      - GOOGLE_SHEET_URL=${GOOGLE_SHEET_URL}
+      - IMAGE_FORWARD_NUMBER=${IMAGE_FORWARD_NUMBER}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Longer start period for potential scraping
+    networks:
+      - watchvine_network
+
+  # ============================================================================
+  # Text Search API - STARTS AFTER MAIN_APP (waits for indexing)
+  # ============================================================================
+  text_search_api:
+    build:
+      context: .
+      dockerfile: Dockerfile.text_search
+    container_name: watchvine_text_search
+    restart: always
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - DATABASE_NAME=watchvine_refined
+      - COLLECTION_NAME=products
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      main_app:
+        condition: service_started  # Wait for main_app to finish setup
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - watchvine_network
+
+  # ============================================================================
+  # Image Identifier API - STARTS AFTER MAIN_APP (needs index files)
+  # ============================================================================
+  image_identifier_api:
+    build:
+      context: .
+      dockerfile: Dockerfile.image_identifier
+    container_name: watchvine_image_identifier
+    restart: always
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./logs:/app/logs
+      - shared_index:/app  # Shared volume for index files
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGODB_URI=mongodb://mongodb:27017/
+      - DATABASE_NAME=watchvine_refined
+      - COLLECTION_NAME=products
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      main_app:
+        condition: service_started  # Wait for main_app to finish setup
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # Longer wait for model loading
+    networks:
+      - watchvine_network
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  shared_index:
+    driver: local  # Shared volume for index files (vector_index.bin, metadata.pkl)
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  watchvine_network:
+    driver: bridge

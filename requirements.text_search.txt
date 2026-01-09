@@ -1,0 +1,20 @@
+# ============================================
+# Text Search API Dependencies
+# ============================================
+
+# FastAPI & Server
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+
+# Database
+pymongo==4.6.1
+
+# HTTP Client
+requests==2.31.0
+
+# Image Processing
+Pillow==10.2.0
+
+# Environment
+python-dotenv==1.0.0

@@ -1,0 +1,48 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Logs (but keep logs/ directory structure)
+*.log
+nightly_scraper.log
+
+# Temporary files
+temp_images/*
+!temp_images/.gitkeep
+temp_media/
+*.tmp
+
+# Environment files (will be mounted, not .env.example)
+.env
+
+# Documentation
+*.md
+chathistory.md
+
+# Test files
+test_*.py
+tmp_*
+
+# OS files
+.DS_Store
+Thumbs.db

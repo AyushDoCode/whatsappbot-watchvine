@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Logs
+*.log
+
+# Temporary files
+tmp_*
+*.tmp
+*.bak
+*.old
+
+# MongoDB
+mongodb_data/
+
+# Media
+temp_images/*
+!temp_images/.gitkeep
+temp_media/*
+
+# Credentials
+credentials.json
+token.json
+
+# Documentation (keeping repo clean)
+*.md
+!.github/*.md

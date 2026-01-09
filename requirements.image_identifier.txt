@@ -1,0 +1,29 @@
+# ============================================
+# Image Identifier API Dependencies V2
+# ============================================
+
+# FastAPI & Server
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+
+# Database
+pymongo==4.6.1
+
+# Vector Search & ML
+numpy<2
+faiss-cpu==1.7.4
+sentence-transformers==2.3.1
+
+# Image Processing
+Pillow==10.2.0
+ImageHash==4.3.1
+scipy>=1.9.0  # Required by ImageHash
+
+# Environment
+python-dotenv==1.0.0
+
+# Web Scraping (for indexer)
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0

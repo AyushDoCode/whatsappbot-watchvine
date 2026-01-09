@@ -1,0 +1,40 @@
+# Dockerfile for Image Identifier API
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.image_identifier.txt .
+RUN pip install --no-cache-dir -r requirements.image_identifier.txt
+
+# Copy all Python files to /app
+COPY store_config.py .
+COPY api_v2.py .
+COPY fast_scraper.py .
+COPY indexer.py .
+COPY __init__.py .
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# API runs from /app directory
+WORKDIR /app
+
+# Expose port
+EXPOSE 8002
+
+# Health check with longer start period since model loading takes time
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8002/health || exit 1
+
+# Run image identifier API from the image_identifier directory
+CMD ["python", "api_v2.py"]
